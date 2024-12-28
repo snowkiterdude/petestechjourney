@@ -1,0 +1,8 @@
+---
+
+- name: basic node bootstrapping
+  hosts:
+    - control
+    - worker
+  roles:
+    - ubuntu_base

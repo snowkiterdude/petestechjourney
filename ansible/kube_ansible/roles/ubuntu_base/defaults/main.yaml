@@ -1,0 +1,4 @@
+
+# should be major and minor version of kubernetes leaving out the "v" and the third octet of the version string
+# e.g. 1.32 will become v1.32 where needed and allow the most resent minor version e.g. 1.32.x to be installed
+kube_version: "1.32"

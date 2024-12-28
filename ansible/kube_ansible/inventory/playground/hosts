@@ -1,0 +1,17 @@
+[local]
+localhost ansible_connection=local
+
+[control]
+34.222.25.176
+
+[worker]
+34.222.27.108
+35.88.174.42
+
+[control:vars]
+ansible_user=cloud_user
+ansible_become=true
+
+[worker:vars]
+ansible_user=cloud_user
+ansible_become=true

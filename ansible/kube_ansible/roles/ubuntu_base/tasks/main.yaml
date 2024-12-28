@@ -1,0 +1,119 @@
+# this role is meant to install kubernetes on a Debian systems based on the install kubeadm doc
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
+
+- name: Gather facts only if not already gathered
+  ansible.builtin.setup:
+  when: ansible_facts is undefined
+  tags:
+    - always
+    - startup
+
+- name: debug the facts
+  debug:
+    msg: |
+      ipv4: {{ ansible_facts.all_ipv4_addresses }}
+      os_family: {{ ansible_facts.os_family }}
+      pkg_mgr: {{ ansible_facts.pkg_mgr }}
+      virt: {{ ansible_facts.virtualization_type }}
+      service: {{ ansible_facts.service_mgr }}
+      architecture: {{ ansible_facts.architecture }}
+      product_uuid: {{ ansible_facts.product_uuid }}
+      hostname: {{ ansible_facts.hostname }}
+      fqdn: {{ ansible_facts.fqdn }}
+      kernel: {{ ansible_facts.kernel }}
+      kernel_version: {{ ansible_facts.kernel_version }}
+  tags:
+    - always
+    - startup
+
+# todo fail if swap is enabled
+
+# todo add compatibility for yum and dnf
+
+# todo setup bridging?!?
+
+- name: fail if not like debian
+  assert:
+    that:
+      - ansible_facts.os_family | lower == "debian"
+      - ansible_facts.pkg_mgr | lower == "apt"
+      - ansible_facts.service_mgr | lower == "systemd"
+      - ansible_facts.system | lower == "linux"
+
+
+- name: install apt packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+    state: present
+
+- name: Ensure the apt keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Download the Kubernetes APT key
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/Release.key
+    dest: /tmp/kubernetes-release.key
+    mode: '0644'
+
+- name: Convert the APT key to GPG format and save it
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-release.key"
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Clean up temporary APT key file
+  ansible.builtin.file:
+    path: /tmp/kubernetes-release.key
+    state: absent
+
+- name: Add the Kubernetes APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
+    filename: "kubernetes"
+
+- name: Create APT preferences for Kubernetes
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/kubernetes
+    content: |
+      Package: kubelet kubeadm kubectl
+      Pin: version {{ kube_version }}.*
+      Pin-Priority: 1001
+
+- name: install apt packages
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: mark kubelet enabled
+  ansible.builtin.service:
+    name: kubelet
+    enabled: yes
+
+- name: ipv4 forward enabled persistently
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.ipv4.ip_forward = 1
+
+- name: reload sysctl / ipv4 forward enabled
+  ansible.builtin.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    reload: yes
+
+# todo disable selinux on RHEL/CentOS
+
+
