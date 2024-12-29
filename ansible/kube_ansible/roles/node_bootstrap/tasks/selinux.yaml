@@ -1,0 +1,37 @@
+
+- name: Ensure SELinux is set to permissive in the configuration file
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: 'SELINUX=permissive'
+  when: selinux_permissive
+  tags:
+    - node_bootstrap
+    - selinux
+
+- name: Set SELinux to permissive in running config
+  ansible.builtin.shell: setenforce 0
+  when: selinux_permissive
+  tags:
+    - node_bootstrap
+    - selinux
+
+- name: Ensure SELinux is set to enforcing in the configuration file
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: 'SELINUX=enforcing'
+  when: not selinux_permissive
+  tags:
+    - node_bootstrap
+    - selinux
+
+- name: Set SELinux to enforcing in running config
+  ansible.builtin.shell: setenforce 1
+  when: not selinux_permissive
+  tags:
+    - node_bootstrap
+    - selinux
+
+# check SELinux status
+# sestatus

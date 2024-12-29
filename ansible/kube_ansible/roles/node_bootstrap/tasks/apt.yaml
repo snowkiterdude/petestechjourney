@@ -1,0 +1,93 @@
+
+- name: install apt packages from kube docs
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+    state: present
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: install additional_apt_packages
+  ansible.builtin.apt:
+    name:
+      - "{{ item }}"
+    state: present
+  loop: "{{ additional_apt_packages }} "
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: Ensure the apt keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: Download the Kubernetes APT key
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/Release.key
+    dest: /tmp/kubernetes-release.key
+    mode: '0644'
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: Convert the APT key to GPG format and save it
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-release.key"
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: Clean up temporary APT key file
+  ansible.builtin.file:
+    path: /tmp/kubernetes-release.key
+    state: absent
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: Add the Kubernetes APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/deb/ /"
+    filename: "kubernetes"
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: install kube packages
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: mark kube packages as held back
+  ansible.builtin.shell:
+    cmd: apt-mark hold kubelet kubeadm kubectl
+  tags:
+    - node_bootstrap
+    - apt
+
+- name: enable kubelet service
+  ansible.builtin.service:
+    name: kubelet
+    enabled: yes
+  tags:
+    - node_bootstrap
+    - apt

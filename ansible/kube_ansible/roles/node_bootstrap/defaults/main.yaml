@@ -1,0 +1,31 @@
+
+# should be major and minor version of kubernetes leaving out the "v" and the third octet of the version string
+# e.g. 1.32 will become v1.32 where needed and allow the most resent minor version e.g. 1.32.x to be installed
+kube_version: "1.30"
+
+
+# SELinux mode:
+# set selinux_permissive to false for enforcing mode (default)
+# set selinux_permissive to true for permissive mode
+# todo: add selinux config instead of just going permissive.
+# note: permissive is recommended in the docs but not for production use.
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#k8s-install-1
+selinux_permissive: true
+
+
+# min memory in MB that the node should have
+# K8s docs say 2Gib is recommended at the very least for
+# playground clusters
+min_mem_mb: 1600
+
+
+additional_apt_packages:
+  - net-tools
+  - dnsutils
+  - mtr
+
+additional_dnf_packages:
+  - net-tools
+  - bind-utils
+  - mtr
+  - vim

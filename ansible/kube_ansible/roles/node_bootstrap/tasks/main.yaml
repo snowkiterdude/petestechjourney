@@ -1,0 +1,102 @@
+# kube install doc source
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
+- name: Gather facts
+  ansible.builtin.setup:
+  when: ansible_facts is undefined
+  tags:
+    - always
+    - node_bootstrap
+
+- name: debug ansible facts
+  ansible.builtin.debug:
+    msg:
+      - "pkg_mgr: {{ ansible_facts.pkg_mgr }}"
+      - "os_family: {{ ansible_facts.os_family }}"
+      - "service: {{ ansible_facts.service_mgr }}"
+      - "product_uuid: {{ ansible_facts.product_uuid }}"
+      - "fqdn: {{ ansible_facts.fqdn }}"
+      - "swap_total: {{ ansible_facts.swaptotal_mb }}"
+      - "mem_total: {{ ansible_facts.memtotal_mb }}"
+      # - "ipv4: {{ ansible_facts.all_ipv4_addresses }}"
+      # - "virt: {{ ansible_facts.virtualization_type }}"
+      # - "architecture: {{ ansible_facts.architecture }}"
+      # - "hostname: {{ ansible_facts.hostname }}"
+      # - "kernel: {{ ansible_facts.kernel }}"
+      # - "kernel_version: {{ ansible_facts.kernel_version }}"
+  tags:
+    - always
+    - node_bootstrap
+
+- name: fail if the system is not supported
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.pkg_mgr | lower == "apt" or
+        ansible_facts.pkg_mgr | lower == "dnf"
+      # systemd required for cgroups management
+      - ansible_facts.service_mgr | lower == "systemd"
+      # swap is not allowed by default in vanilla K8s
+      - ansible_facts.swaptotal_mb | int == 0
+      # at least 2GB of ram is required on control and worker nodes(set min in defaults)
+      - ansible_facts.memtotal_mb | int >= min_mem_mb
+  tags:
+    - always
+    - node_bootstrap
+
+
+###########
+# SELinux #
+###########
+- name: Check if SELinux configuration file exists
+  stat:
+    path: /etc/selinux/config
+  register: selinux_config_stat
+  tags:
+    - node_bootstrap
+    - selinux
+
+- name: include selinux tasks
+  ansible.builtin.include_tasks: selinux.yaml
+  when:
+    - selinux_config_stat.stat.exists
+  tags:
+    - node_bootstrap
+    - selinux
+
+
+#####################
+# enable forwarding #
+#####################
+- name: include forwarding tasks
+  ansible.builtin.import_tasks: forwarding.yaml
+  tags:
+    - node_bootstrap
+    - forwarding
+
+
+#######################
+# kube packages - apt #
+#######################
+- name: include apt tasks
+  ansible.builtin.import_tasks: apt.yaml
+  when: ansible_facts.pkg_mgr | lower == "apt"
+  tags:
+    - node_bootstrap
+    - apt
+
+
+#######################
+# kube packages - dnf #
+#######################
+- name: include dnf tasks
+  ansible.builtin.import_tasks: dnf.yaml
+  when: ansible_facts.pkg_mgr | lower == "dnf"
+  tags:
+    - node_bootstrap
+    - dnf
+
+
+
+
+# todo setup bridging?!?
+
+# install firewalld and open ports

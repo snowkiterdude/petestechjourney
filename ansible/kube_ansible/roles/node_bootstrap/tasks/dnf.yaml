@@ -1,0 +1,44 @@
+
+- name: install additional_dnf_packages
+  ansible.builtin.dnf:
+    name:
+      - "{{ item }}"
+    state: present
+  loop: "{{ additional_dnf_packages }} "
+  tags:
+    - node_bootstrap
+    - dnf
+
+- name: Add Kubernetes repository
+  ansible.builtin.yum_repository:
+    name: Kubernetes
+    description: Kubernetes YUM repo
+    baseurl: https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/rpm/
+    gpgcheck: true
+    enabled: true
+    gpgkey: https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/rpm/repodata/repomd.xml.key
+    exclude: kubelet kubeadm kubectl cri-tools kubernetes-cni
+  tags:
+    - node_bootstrap
+    - dnf
+
+- name: Install kubelet, kubeadm, and kubectl
+  ansible.builtin.dnf:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    disable_excludes: Kubernetes
+  tags:
+    - node_bootstrap
+    - dnf
+
+- name: Enable and start kubelet service
+  ansible.builtin.service:
+    name: kubelet
+    enabled: yes
+    state: started
+  tags:
+    - node_bootstrap
+    - dnf

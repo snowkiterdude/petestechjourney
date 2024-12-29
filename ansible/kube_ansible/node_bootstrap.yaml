@@ -5,4 +5,4 @@
     - control
     - worker
   roles:
-    - ubuntu_base
+    - node_bootstrap

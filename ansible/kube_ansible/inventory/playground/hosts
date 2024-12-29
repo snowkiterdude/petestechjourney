@@ -2,11 +2,12 @@
 localhost ansible_connection=local
 
 [control]
-34.222.25.176
+18.237.45.254
 
 [worker]
-34.222.27.108
-35.88.174.42
+54.184.160.52
+35.91.122.217
+35.164.171.223
 
 [control:vars]
 ansible_user=cloud_user
