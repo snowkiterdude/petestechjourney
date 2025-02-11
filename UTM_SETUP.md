@@ -4,7 +4,7 @@
 We will be setting up some VMs to use in a test K8s cluster using UTM on MAC Silicon. This guide assumes you have already installed UTM.
 
 
-Download the SHA256SUMS and ubuntu-24.04.1-live-server-arm64.iso files from the (arm archive)[https://cdimage.ubuntu.com/releases/24.04.1/release/]
+Download the SHA256SUMS and ubuntu-24.04.1-live-server-arm64.iso files from the [arm archive](https://cdimage.ubuntu.com/releases/24.04.1/release/)
 
 
 Check the sha256sums file to ensure the integrity of the downloaded files:
@@ -18,7 +18,7 @@ ubuntu-24.04.1-live-server-arm64.iso: OK
 * Click the + button
 * Click Virtualize
 * Select Linux
-* select the arm64 ISO file we just downloaded and click continue
+* Select the arm64 ISO file we just downloaded and click continue
 * Give it 2048 MB of RAM and 2 vCPUs and click continue
 * Give it 32GiB of disk space and click continue
 * name the VM control-01
@@ -26,29 +26,29 @@ ubuntu-24.04.1-live-server-arm64.iso: OK
 
 # Configure and install
 
-* Click the setting of the VM we just created
+* Click the settings button of the VM we just created
 * Go to the network tab
-* Select Shared Network and click advance settings so we can define the DHCP range
+* Select `Shared Network` and click advance settings so we can define the DHCP range
   * 10.50.50.0/24 as the guest network
   * 10.50.50.100 as the DHCP start
   * 10.50.50.200 as the DHCP end
 
 * Power On the VM
-* select Try or Install Ubuntu Server
+* Select Try or Install Ubuntu Server
 * Select your language (English)
 * Continue without updating the installer
 * Select done to select the default keyboard layout
 * Leave the selection as ubuntu server and select done
 * Select done to accept the default DHCP address
-* Select done to have not proxy
-* Select done to accept the default mirror
+* Select done to have no proxy settings
+* Select done to accept the default packages mirror
 * Select use the entire disk space, Select Setup this disk as a LVM Group and click done to continue
-* select done to continue with the default partition table
-* enter your user information and put control-01 for the hostname "your servers name"
-* select continue to ignore ubuntu pro
-* select install open-ssh server and select done to continue
-* select done to skip the package selection
-* once the installation is complete, click reboot
+* Select done to continue with the default partition table
+* Enter your user information and put control-01 for the hostname "your servers name"
+* Select continue to ignore ubuntu pro
+* Select install open-ssh server and select done to continue
+* Select done to skip the package selection
+* Once the installation is complete, click reboot
 
 # Connect to your VM
 
@@ -68,21 +68,20 @@ shutdown -h now;
 
 Its important that we reset a few things as we clone the base VM such as mac address, the machine-id, ssh keys, and hostname. If we don't reinitialize these configurations, the VM will not be able to connect to the internet or join our K8s cluster.
 
-* click the copy button
-* on the new copy open settings
-  * in the network section click the random button next to the mac address to generate a new mac address
-  * Change the name of the new VM to worker-01
-* repeat these steps for worker-02 and worker-03
+* Click the copy button
+* On the new copy open settings
+  * In the network section click the random button next to the mac address to generate a new mac address
+  * Change the name of the new VM to the coresponding control/worker hostname
+* Repeat these steps until you have cloned all your VMs.. control-01, control-02, control-03, worker-01, worker-02, worker-03
 
 * Start up the VM and SSH to if from your mac terminal
 * `sudo -i` to become root
 * `vim reset_vm.sh` and copy the following script into it.
 * `chmod +x reset_vm.sh` to make it executable
 * `./reset_vm.sh` to run the script.
-* comment out the HOSTNAME, and IP_ADDRA lines as needed per server.
+* Comment in/out the HOSTNAME, and IP_ADDRA lines as needed per server.
 
-* ssh and run the script on all four VMs. Once the script is done reboot each the VM.
-
+* ssh and run the script on all VMs, even the origonal control-01 VM. Once the script is done reboot each VM.
 
 ```shell
 #!/bin/bash
@@ -92,7 +91,11 @@ set -euxo pipefail
 OLD_HOSTNAME="control-01"
 
 HOSTNAME="control-01"
-IP_ADDRA="10.50.50.91"
+IP_ADDRA="10.50.50.81"
+# HOSTNAME="control-02"
+# IP_ADDRA="10.50.50.82"
+# HOSTNAME="control-03"
+# IP_ADDRA="10.50.50.83"
 # HOSTNAME="worker-01"
 # IP_ADDRA="10.50.50.91"
 # HOSTNAME="worker-02"
@@ -136,8 +139,11 @@ network:
 EOF
 
 echo "removing the cloud-init netplan configuration file"
+echo 'network: {config: disabled}' > /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
 rm /etc/netplan/50-cloud-init.yaml
 
 echo "done with VM reset"
 ```
 * reboot each VM
+
+* The Base VM Image is now ready to be configured with ansible. See the snowkiterdude/kube_ansible repo for future configuration to bootstrap these VMs into a Kubernetes cluster.
