@@ -57,11 +57,11 @@ ubuntu-24.04.1-live-server-arm64.iso: OK
 * In your Mac terminal ssh to the IP you got from the `ip a` command. e.g. `ssh 10.50.50.100`
 
 ```shell
-sudo -i;
-apt update;
-apt upgrade -y;
-apt install net-tools dnsutils;
-shutdown -h now;
+$ sudo -i;
+# apt update;
+# apt upgrade -y;
+# apt install net-tools dnsutils;
+# shutdown -h now;
 ```
 
 # cloning our VM
@@ -146,4 +146,54 @@ echo "done with VM reset"
 ```
 * reboot each VM
 
-* The Base VM Image is now ready to be configured with ansible. See the snowkiterdude/kube_ansible repo for future configuration to bootstrap these VMs into a Kubernetes cluster.
+* The Base VM Image is now ready to be configured with ansible. See the [snowkiterdude/kube_ansible](https://github.com/snowkiterdude/kube_ansible) repo for future configuration to bootstrap these VMs into a Kubernetes cluster.
+
+
+# Creating snapshot
+
+UTM Does not have snapshot support however we can use the qemu-img command to create snapshots of the disk images. Before creating or restoring a snapshot, we need to ensure that the disk images are not mounted so make sure the VM is not running.
+
+Install qemu
+```shell
+brew install qemu
+```
+
+First CD into the UTM data directory
+```shell
+% cd ~/Library/Containers/com.utmapp.UTM/Data/Documents;
+% ls -l
+drwxr-xr-x@  5 pete  staff  160 Feb 11 23:37 control-01.utm
+drwxr-xr-x@  5 pete  staff  160 Feb 11 23:37 worker-01.utm
+drwxr-xr-x@  5 pete  staff  160 Feb 11 23:37 worker-02.utm
+drwxr-xr-x@  5 pete  staff  160 Feb 11 23:38 worker-03.utm
+```
+
+The images are inside the `<vm-name>.utm/Data/` directory. we will be using the after_init name for our snapshot name in these examples.
+
+Create a snapshot of the disk image
+```shell
+qemu-img snapshot -c after_init control-01.utm/Data/ABCD-1234.qcow2
+```
+
+List the snapshots of the disk image
+```shell
+% qemu-img snapshot -l control-01.utm/Data/ABCD-1234.qcow2
+Snapshot list:
+ID      TAG               VM_SIZE                DATE        VM_CLOCK     ICOUNT
+1       after_init            0 B 2025-02-11 23:55:02  0000:00:00.000          0
+```
+
+Restore a snapshot
+```shell
+% qemu-img snapshot -a after_init control-01.utm/Data/ABCD-1234.qcow2
+```
+
+Delete specific snapshot
+```shell
+% qemu-img snapshot -d after_init control-01.utm/Data/ABCD-1234.qcow2
+```
+
+Delete all snapshots
+```shell
+% qemu-img snapshot -D control-01.utm/Data/ABCD-1234.qcow2
+```
