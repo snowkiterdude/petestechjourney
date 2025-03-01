@@ -197,3 +197,14 @@ Delete all snapshots
 ```shell
 % qemu-img snapshot -D control-01.utm/Data/ABCD-1234.qcow2
 ```
+
+Shutdown and revert the snapshot for all nodes.
+since we cloned all our images from control-01 they will all have the same image UUID
+Change the image UUID to match your setup by listing one of the images `ls control-01.utm/Data/`
+shutdown all your VMs then run the following command to revert the snapshot for all VMs.
+```shell
+export IMAGE_UUID="ABCD-1234"
+for i in {control-0{1..3},worker-0{1..3}}; do
+qemu-img snapshot -a after_init "${i}.utm/Data/${IMAGE_UUID}.qcow2"
+done
+```
