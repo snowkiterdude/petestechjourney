@@ -1,0 +1,6 @@
+---
+- name: Run all the roles on our control node
+  hosts: control
+  become: yes
+  roles:
+    - ca_certs

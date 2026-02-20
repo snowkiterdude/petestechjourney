@@ -1,0 +1,150 @@
+---
+- name: Ensure required directories exist
+  ansible.builtin.file:
+    path: "{{ ca_base_dir }}"
+    state: directory
+    mode: '0700'
+  tags:
+    - ca_certs
+
+- name: Ensure required directories exist
+  ansible.builtin.file:
+    path: "{{ ca_base_dir }}/{{ item }}"
+    state: directory
+    mode: '0700'
+  loop: "{{ ca_cert_identities }}"
+  tags:
+    - ca_certs
+
+- name: Generate root CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ root_cert.key_path }}"
+    size: 4096
+    type: RSA
+    mode: '0600'
+  tags:
+    - ca_certs
+
+- name: Generate root CA certificate signing request (CSR)
+  community.crypto.openssl_csr:
+    path: "{{ root_cert.csr_path }}"
+    privatekey_path: "{{ root_cert.key_path }}"
+    common_name: "{{ root_cert.common_name }}"
+    country_name: "{{ root_cert.country_name }}"  # Optional, customize as needed
+    state_or_province_name: "{{ root_cert.state_name }}"  # Optional
+    locality_name: "{{ root_cert.locality_name }}"  # Optional
+    organization_name: "{{ root_cert.organization_name }}"  # Optional
+    organizational_unit_name: "{{ root_cert.organizational_unit_name }}"
+    basic_constraints:
+      - 'CA:TRUE'
+    basic_constraints_critical: true
+    key_usage:
+      - keyCertSign
+      - cRLSign
+    key_usage_critical: true
+  tags:
+    - ca_certs
+
+- name: Generate self-signed root CA certificate with 20-year expiration
+  community.crypto.x509_certificate:
+    path: "{{ root_cert.cert_path }}"
+    csr_path: "{{ root_cert.csr_path }}"
+    privatekey_path: "{{ root_cert.key_path }}"
+    provider: selfsigned
+    selfsigned_not_after: "+7305d"  # Approximately 20 years (365*20 + 5 for leap years)
+  tags:
+    - ca_certs
+
+- name: Generate intermediate CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ int01_cert.key_path }}"
+    size: 4096
+    type: RSA
+    mode: '0600'
+  tags:
+    - ca_certs
+
+- name: Generate intermediate CA certificate signing request (CSR)
+  community.crypto.openssl_csr:
+    path: "{{ int01_cert.csr_path }}"
+    privatekey_path: "{{ int01_cert.key_path }}"
+    common_name: "{{ int01_cert.common_name }}"
+    country_name: "{{ int01_cert.country_name }}"  # Optional, consistent with root
+    state_or_province_name: "{{ int01_cert.state_name }}"  # Optional
+    locality_name: "{{ int01_cert.locality_name }}"  # Optional
+    organization_name: "{{ int01_cert.organization_name }}"  # Optional
+    organizational_unit_name: "{{ int01_cert.organizational_unit_name }}"  # Optional
+    basic_constraints:
+      - 'CA:TRUE'
+      - 'pathlen:0'  # Optional: Restrict to no further subordinates
+    basic_constraints_critical: true
+    key_usage:
+      - keyCertSign
+      - cRLSign
+    key_usage_critical: true
+  tags:
+    - ca_certs
+
+- name: Sign intermediate CA certificate with root CA (10-year expiration)
+  community.crypto.x509_certificate:
+    path: "{{ int01_cert.cert_path }}"
+    csr_path: "{{ int01_cert.csr_path }}"
+    ownca_path: "{{ root_cert.cert_path }}"
+    ownca_privatekey_path: "{{ root_cert.key_path }}"
+    provider: ownca
+    ownca_not_after: "+3652d"  # Approximately 10 years (365*10 + 2 for leap years)
+  tags:
+    - ca_certs
+
+- name: Read root CA certificate content from remote host
+  ansible.builtin.slurp:
+    src: "{{ root_cert.cert_path }}"
+  register: root_ca_content
+  tags:
+    - ca_certs
+
+- name: Read intermediate CA certificate content from remote host
+  ansible.builtin.slurp:
+    src: "{{ int01_cert.cert_path }}"
+  register: intermediate_ca_content
+  tags:
+    - ca_certs
+
+- name: Create CA chain file (root + intermediate)
+  ansible.builtin.copy:
+    content: "{{ root_ca_content['content'] | b64decode }}\n{{ intermediate_ca_content['content'] | b64decode }}"
+    dest: "{{ int01_cert.chain_path }}"
+    mode: '0644'
+  tags:
+    - ca_certs
+
+- name: Copy root CA certificate to system trust store
+  ansible.builtin.copy:
+    src: "{{ root_cert.cert_path }}"
+    dest: "/usr/local/share/ca-certificates/{{ root_cert.name }}"
+    mode: '0644'
+    remote_src: true
+  become: true
+  tags:
+    - ca_certs
+
+- name: Copy intermediate CA certificate to system trust store
+  ansible.builtin.copy:
+    src: "{{ int01_cert.cert_path  }}"
+    dest: "/usr/local/share/ca-certificates/{{ int01_cert.name }}"
+    mode: '0644'
+    remote_src: true
+  become: true
+  tags:
+    - ca_certs
+
+- name: Update CA certificates
+  ansible.builtin.command: update-ca-certificates --fresh
+  become: true
+  changed_when: false
+  tags:
+    - ca_certs
+
+# to add it to mac
+# sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/path/to/your-intermediate-ca.pem
+# you will need to restart your web browsers for the cert to take affect

@@ -1,0 +1,31 @@
+ca_base_dir: /root/ca_certs
+ca_cert_identities:
+  - root
+  - int01
+
+# root cert
+root_cert:
+  name: skd.crt
+  key_path: "{{ ca_base_dir }}/root/skd.key"
+  csr_path: "{{ ca_base_dir }}/root/skd.csr"
+  cert_path: "{{ ca_base_dir }}/root/skd.crt"
+  common_name: root.skd.internal
+  country_name: US
+  state_name: MT
+  locality_name: Flathead
+  organization_name: snowkiterdude
+  organizational_unit_name: IT
+
+# intermediate01
+int01_cert:
+  name: skdint01.crt
+  key_path: "{{ ca_base_dir }}/int01/skdint01.key"
+  csr_path: "{{ ca_base_dir }}/int01/skdint01.csr"
+  cert_path: "{{ ca_base_dir }}/int01/skdint01.crt"
+  chain_path: "{{ ca_base_dir }}/int01/skdint01.pem"
+  common_name: skdint01.skd.internal
+  country_name: US
+  state_name: MT
+  locality_name: Flathead
+  organization_name: snowkiterdude
+  organizational_unit_name: IT
