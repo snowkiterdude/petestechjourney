@@ -1,0 +1,9 @@
+repos:
+  - name: mygitopsrepo1
+    authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGELfpnhBhaOausk/x/vzwmpiCIsp8Oe/5keZqISodqm john@myserver01
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGELfpnhBhaOausk/x/vzwmpiCIsp8Oe/5keZqISodqn doe@myserver01
+  - name: mygitopsrepo2
+    authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGELfpnhBhaOausk/x/vzwmpiCIsp8Oe/5keZqISodqo sally@myserver01
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGELfpnhBhaOausk/x/vzwmpiCIsp8Oe/5keZqISodqp may@myserver01

@@ -38,7 +38,7 @@ ubuntu-24.04.1-live-server-arm64.iso: OK
 * Select your language (English)
 * Continue without updating the installer
 * Select done to select the default keyboard layout
-* Leave the selection as ubuntu server and select done
+* Select Ubuntu server minimal and select done
 * Select done to accept the default DHCP address
 * Select done to have no proxy settings
 * Select done to accept the default packages mirror
@@ -60,7 +60,7 @@ ubuntu-24.04.1-live-server-arm64.iso: OK
 $ sudo -i;
 # apt update;
 # apt upgrade -y;
-# apt install net-tools dnsutils;
+# apt install net-tools dnsutils vim mtr-tiny iputils-ping;
 # shutdown -h now;
 ```
 
@@ -205,6 +205,8 @@ shutdown all your VMs then run the following command to revert the snapshot for 
 ```shell
 export IMAGE_UUID="ABCD-1234"
 for i in {control-0{1..3},worker-0{1..3}}; do
-qemu-img snapshot -a after_init "${i}.utm/Data/${IMAGE_UUID}.qcow2"
+  echo "Reverting snapshot for ${i}"
+  qemu-img snapshot -a after_init "${i}.utm/Data/${IMAGE_UUID}.qcow2"
+  echo
 done
 ```

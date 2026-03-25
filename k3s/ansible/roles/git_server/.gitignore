@@ -1,0 +1,6 @@
+#
+# put your ssh public keys are repo names in vars/main.yaml
+# which will override defaults/main.yaml and still keep your
+# public ssh keys out of public github repositories.
+# 
+vars
