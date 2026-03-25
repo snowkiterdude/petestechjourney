@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Calculator</title>
+    
+    <!-- House Emoji Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='80'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .slider-thumb { accent-color: #00f0ff; }
+        .artifact-card { box-shadow: 0 15px 35px -10px rgb(0 240 255 / 0.25); }
+        #amortization-chart { max-height: 340px !important; }
+        .compact-section { margin-bottom: 0.85rem; }
+        table { border-collapse: collapse; }
+        th, td { padding: 10px 12px; }
+    </style>
+</head>
+<body class="min-h-screen bg-zinc-950 text-white">
+    <div class="max-w-7xl mx-auto p-6">
+        
+        <!-- Main Heading -->
+        <div class="flex justify-center items-center gap-x-4 mb-10">
+            <div class="text-5xl">🏠</div>
+            <h1 class="text-5xl font-semibold tracking-tight">Mortgage Calculator</h1>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- INPUTS -->
+            <div class="lg:col-span-5 bg-zinc-900 rounded-3xl p-6 artifact-card">
+                <div class="compact-section">
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="font-medium text-zinc-300">Home Price</label>
+                        <div class="font-mono text-cyan-400" id="home-value">$350,000</div>
+                    </div>
+                    <input type="range" id="home-slider" min="100000" max="3000000" step="5000" value="350000" class="w-full slider-thumb">
+                    <input type="number" id="home-input" value="350000" class="mt-1.5 w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                </div>
+
+                <div class="compact-section">
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="font-medium text-zinc-300">Down Payment</label>
+                        <div class="font-mono text-cyan-400" id="down-value">$50k (14.3%)</div>
+                    </div>
+                    <input type="range" id="down-slider" min="0" max="100" step="0.1" value="14.2857" class="w-full slider-thumb">
+                    <input type="number" id="down-input" value="50000" class="mt-1.5 w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                </div>
+
+                <div class="compact-section">
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="font-medium text-zinc-300">Interest Rate (%)</label>
+                        <div class="font-mono text-cyan-400" id="rate-value">4.5</div>
+                    </div>
+                    <input type="range" id="rate-slider" min="0" max="15" step="0.05" value="4.5" class="w-full slider-thumb">
+                    <input type="number" id="rate-input" value="4.5" step="0.05" class="mt-1.5 w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                </div>
+
+                <div class="compact-section">
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="font-medium text-zinc-300">Loan Term (years)</label>
+                        <div class="font-mono text-cyan-400" id="term-value">30</div>
+                    </div>
+                    <input type="range" id="term-slider" min="5" max="40" step="1" value="30" class="w-full slider-thumb">
+                    <input type="number" id="term-input" value="30" class="mt-1.5 w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                </div>
+
+                <div class="compact-section">
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="font-medium text-zinc-300">Extra Principal (per payment)</label>
+                        <div class="font-mono text-cyan-400" id="extra-value">$0</div>
+                    </div>
+                    <input type="range" id="extra-slider" min="0" max="5000" step="25" value="0" class="w-full slider-thumb">
+                    <input type="number" id="extra-input" value="0" step="25" class="mt-1.5 w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                </div>
+
+                <div class="border-t border-zinc-700 pt-5 mt-5">
+                    <h3 class="text-sm font-medium mb-4 text-center">Additional Monthly Costs</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs block mb-1 text-zinc-400">Property Tax (annual)</label>
+                            <input type="number" id="tax-input" value="4200" step="100" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                            <div class="text-xs text-zinc-400 mt-1">Monthly: <span id="tax-monthly">$350</span></div>
+                        </div>
+                        <div>
+                            <label class="text-xs block mb-1 text-zinc-400">Home Insurance (annual)</label>
+                            <input type="number" id="insurance-input" value="1500" step="50" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                            <div class="text-xs text-zinc-400 mt-1">Monthly: <span id="ins-monthly">$125</span></div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-xs block mb-1 text-zinc-400">HOA / Condo Fees (monthly)</label>
+                        <input type="number" id="hoa-input" value="0" step="10" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 text-base font-mono">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center justify-between bg-zinc-950 p-4 rounded-2xl">
+                    <div>
+                        <span class="font-medium">Bi-weekly Payments</span>
+                        <p class="text-xs text-zinc-400">Pay every 2 weeks</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="biweekly" class="sr-only peer" onchange="calculateMortgage()">
+                        <div class="w-11 h-6 bg-zinc-700 peer-focus:ring-2 peer-focus:ring-cyan-400 rounded-full peer peer-checked:bg-cyan-500"></div>
+                        <div class="dot absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition"></div>
+                    </label>
+                </div>
+
+                <div class="mt-5 text-center text-xs bg-emerald-900/50 border border-emerald-800 p-3 rounded-2xl">
+                    Actual Loan: <span class="font-mono text-cyan-300" id="calculated-loan">$300,000</span>
+                </div>
+            </div>
+
+            <!-- OUTPUTS -->
+            <div class="lg:col-span-7 space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-zinc-900 rounded-3xl p-6">
+                        <p class="text-xs uppercase tracking-widest text-zinc-400">P+I Monthly</p>
+                        <div id="monthly-pi" class="text-4xl font-semibold font-mono">$1,520</div>
+                    </div>
+                    <div class="bg-zinc-900 rounded-3xl p-6">
+                        <p class="text-xs uppercase tracking-widest text-zinc-400">Total Monthly</p>
+                        <div id="total-monthly" class="text-4xl font-semibold font-mono">$2,000</div>
+                        <p id="payment-type" class="text-xs text-emerald-400">Monthly</p>
+                    </div>
+                    <div class="bg-zinc-900 rounded-3xl p-6">
+                        <p class="text-xs uppercase tracking-widest text-zinc-400">Payoff Time</p>
+                        <div id="payoff-time" class="text-4xl font-semibold font-mono">30 yr</div>
+                        <p id="payoff-savings" class="text-xs text-emerald-400"></p>
+                    </div>
+                    <div class="bg-zinc-900 rounded-3xl p-6">
+                        <p class="text-xs uppercase tracking-widest text-zinc-400">Total Interest</p>
+                        <div id="total-interest" class="text-4xl font-semibold font-mono">$247k</div>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-900 rounded-3xl p-6 artifact-card">
+                    <div class="flex justify-between mb-4">
+                        <h2 class="text-xl font-semibold">Principal & Interest Over Time</h2>
+                        <button onclick="exportCSV()" 
+                                class="px-5 py-2 text-sm bg-cyan-500 hover:bg-cyan-600 text-black font-medium rounded-2xl flex items-center gap-2">
+                            📥 Export Full CSV
+                        </button>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="amortization-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-900 rounded-3xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">First Payment Breakdown</h3>
+                    <div class="grid grid-cols-4 gap-6 text-sm">
+                        <div>
+                            <div class="flex justify-between mb-2"><span class="text-zinc-400">Interest</span><span id="interest-this" class="font-mono">$1,125</span></div>
+                            <div class="h-2 bg-zinc-700 rounded-full"><div id="int-bar" class="h-2 bg-orange-400 rounded-full" style="width:70%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2"><span class="text-zinc-400">Principal</span><span id="principal-this" class="font-mono">$395</span></div>
+                            <div class="h-2 bg-zinc-700 rounded-full"><div id="prin-bar" class="h-2 bg-emerald-400 rounded-full" style="width:30%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2"><span class="text-zinc-400">Extra Principal</span><span id="extra-this" class="font-mono">$0</span></div>
+                            <div class="h-2 bg-zinc-700 rounded-full"><div id="extra-bar" class="h-2 bg-cyan-400 rounded-full" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-semibold text-emerald-400">Monthly EOP</span>
+                                <span id="monthly-eop" class="font-semibold font-mono text-emerald-400">$2,000</span>
+                            </div>
+                            <div class="h-2 bg-zinc-700 rounded-full"><div id="eop-bar" class="h-2 bg-emerald-400 rounded-full w-full"></div></div>
+                            <p class="text-xs text-emerald-400 mt-1">Total out-of-pocket</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Schedule -->
+        <div class="mt-10 bg-zinc-900 rounded-3xl p-6 artifact-card">
+            <h2 class="text-xl font-semibold mb-4">📅 Yearly Amortization Schedule</h2>
+            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-zinc-800 sticky top-0">
+                        <tr class="border-b border-zinc-700">
+                            <th class="text-left font-medium text-zinc-400">Year</th>
+                            <th class="text-right font-medium text-zinc-400">Principal Paid</th>
+                            <th class="text-right font-medium text-zinc-400">Interest Paid</th>
+                            <th class="text-right font-medium text-zinc-400">Remaining Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yearly-table" class="text-zinc-300"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+        let currentYearlyData = [];
+        let currentPaymentSchedule = [];
+
+        function calculateMortgage() {
+            const homePrice = parseFloat(document.getElementById('home-input').value) || 350000;
+            let down = parseFloat(document.getElementById('down-input').value) || 0;
+            down = Math.min(down, homePrice);
+            const loanAmount = Math.max(0, homePrice - down);
+
+            const rate = parseFloat(document.getElementById('rate-input').value) || 4.5;
+            const termYears = parseFloat(document.getElementById('term-input').value) || 30;
+            const extra = parseFloat(document.getElementById('extra-input').value) || 0;
+
+            const annualTax = parseFloat(document.getElementById('tax-input').value) || 0;
+            const annualIns = parseFloat(document.getElementById('insurance-input').value) || 0;
+            const hoa = parseFloat(document.getElementById('hoa-input').value) || 0;
+
+            document.getElementById('tax-monthly').textContent = '$' + (annualTax/12).toFixed(0);
+            document.getElementById('ins-monthly').textContent = '$' + (annualIns/12).toFixed(0);
+
+            const isBiweekly = document.getElementById('biweekly').checked;
+            const monthlyRate = rate / 100 / 12;
+            const periodsPerYear = isBiweekly ? 26 : 12;
+            const totalPeriods = termYears * periodsPerYear;
+
+            let payment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, totalPeriods)) / 
+                         (Math.pow(1 + monthlyRate, totalPeriods) - 1);
+            if (monthlyRate === 0) payment = loanAmount / totalPeriods;
+
+            let balance = loanAmount;
+            let totalInterest = 0;
+            let periodCount = 0;
+            let data = [];
+            let yearlyData = [];
+            let paymentSchedule = [];
+
+            let yearPrincipal = 0;
+            let yearInterest = 0;
+            let currentYear = 1;
+
+            while (balance > 0.01 && periodCount < 2000) {
+                periodCount++;
+                const interestThis = balance * monthlyRate;
+                totalInterest += interestThis;
+                let principalThis = payment - interestThis;
+                let totalReduction = principalThis + extra;
+                if (balance < totalReduction) totalReduction = balance;
+
+                balance -= totalReduction;
+                if (balance < 0) balance = 0;
+
+                yearPrincipal += principalThis + extra;
+                yearInterest += interestThis;
+
+                paymentSchedule.push({
+                    paymentNum: periodCount,
+                    interest: Math.round(interestThis),
+                    principal: Math.round(principalThis),
+                    extra: Math.round(extra),
+                    totalPayment: Math.round(payment + extra),
+                    balance: Math.round(balance)
+                });
+
+                data.push({period: periodCount, balance: Math.round(balance), cumInterest: Math.round(totalInterest)});
+
+                if (periodCount % periodsPerYear === 0 || balance <= 0.01) {
+                    yearlyData.push({
+                        year: currentYear,
+                        principal: Math.round(yearPrincipal),
+                        interest: Math.round(yearInterest),
+                        balance: Math.round(balance)
+                    });
+                    yearPrincipal = 0;
+                    yearInterest = 0;
+                    currentYear++;
+                }
+            }
+
+            currentYearlyData = yearlyData;
+            currentPaymentSchedule = paymentSchedule;
+
+            // Update UI
+            document.getElementById('home-value').textContent = '$' + homePrice.toLocaleString();
+            document.getElementById('down-value').textContent = '$' + down.toLocaleString() + ` (${(down/homePrice*100).toFixed(1)}%)`;
+            document.getElementById('calculated-loan').textContent = '$' + loanAmount.toLocaleString();
+            document.getElementById('rate-value').textContent = rate.toFixed(2);
+            document.getElementById('term-value').textContent = termYears;
+            document.getElementById('extra-value').textContent = '$' + extra.toLocaleString();
+
+            const piMonthly = Math.round(payment);
+            const totalMonthly = Math.round(payment + annualTax/12 + annualIns/12 + hoa);
+
+            document.getElementById('monthly-pi').textContent = '$' + piMonthly;
+            document.getElementById('total-monthly').textContent = '$' + totalMonthly;
+            document.getElementById('payment-type').textContent = isBiweekly ? 'Bi-weekly' : 'Monthly';
+            document.getElementById('payoff-time').innerHTML = `${Math.floor(periodCount / periodsPerYear)}yr`;
+            document.getElementById('total-interest').textContent = '$' + Math.round(totalInterest).toLocaleString().replace(/,000$/, 'k');
+
+            const firstInterest = loanAmount * monthlyRate;
+            const firstPrincipal = payment - firstInterest;
+            document.getElementById('interest-this').textContent = '$' + Math.round(firstInterest);
+            document.getElementById('principal-this').textContent = '$' + Math.round(firstPrincipal);
+            document.getElementById('extra-this').textContent = '$' + extra;
+
+            const monthlyEOP = totalMonthly + extra;
+            document.getElementById('monthly-eop').textContent = '$' + monthlyEOP;
+
+            document.getElementById('int-bar').style.width = (firstInterest / payment * 100) + '%';
+            document.getElementById('prin-bar').style.width = (firstPrincipal / payment * 100) + '%';
+            document.getElementById('extra-bar').style.width = extra > 0 ? '100%' : '0%';
+
+            renderChart(data);
+            renderYearlyTable(yearlyData);
+        }
+
+        function renderYearlyTable(yearlyData) {
+            const tbody = document.getElementById('yearly-table');
+            tbody.innerHTML = '';
+            yearlyData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-zinc-800 hover:bg-zinc-800/50';
+                tr.innerHTML = `
+                    <td class="font-medium">${row.year}</td>
+                    <td class="text-right font-mono">$${row.principal.toLocaleString()}</td>
+                    <td class="text-right font-mono text-orange-400">$${row.interest.toLocaleString()}</td>
+                    <td class="text-right font-mono text-cyan-400">$${row.balance.toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('amortization-chart');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.period),
+                    datasets: [
+                        { label: 'Remaining Balance', data: data.map(d => d.balance), borderColor: '#00f0ff', borderWidth: 3, tension: 0.3, pointRadius: 0 },
+                        { label: 'Cumulative Interest', data: data.map(d => d.cumInterest), borderColor: '#10b981', borderWidth: 3, tension: 0.3, yAxisID: 'y1', pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: '#27272a' }, ticks: { color: '#a1a1aa', maxTicksLimit: 12 } },
+                        y: { grid: { color: '#27272a' }, ticks: { color: '#a1a1aa', callback: v => '$' + (v/1000) + 'k' } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#a1a1aa', callback: v => '$' + (v/1000) + 'k' }}
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ==================== FIXED CSV EXPORT ====================
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            csvContent += "MORTGAGE CALCULATOR - FULL REPORT\n";
+            csvContent += `Generated on${new Date().toLocaleString()}\n\n`;   // Fixed: no extra comma after "on"
+
+            // Inputs
+            csvContent += "INPUTS\n";
+            csvContent += `Home Price,"${parseFloat(document.getElementById('home-input').value).toLocaleString()}"\n`;
+            csvContent += `Down Payment,"${parseFloat(document.getElementById('down-input').value).toLocaleString()}"\n`;
+            csvContent += `Interest Rate,"${document.getElementById('rate-input').value}"%\n`;
+            csvContent += `Loan Term,"${document.getElementById('term-input').value} years"\n`;
+            csvContent += `Extra Principal per payment,"${document.getElementById('extra-input').value}"\n`;
+            csvContent += `Payment Frequency,"${document.getElementById('biweekly').checked ? "Bi-weekly" : "Monthly"}"\n\n`;
+
+            // Summary
+            csvContent += "SUMMARY\n";
+            csvContent += `Monthly P+I,"${document.getElementById('monthly-pi').textContent}"\n`;
+            csvContent += `Total Monthly Payment,"${document.getElementById('total-monthly').textContent}"\n`;
+            csvContent += `Monthly EOP (out-of-pocket),"${document.getElementById('monthly-eop').textContent}"\n`;
+            csvContent += `Payoff Time,"${document.getElementById('payoff-time').textContent}"\n`;
+            csvContent += `Total Interest,"${document.getElementById('total-interest').textContent}"\n\n`;
+
+            // Yearly Schedule
+            csvContent += "YEARLY AMORTIZATION SCHEDULE\n";
+            csvContent += "Year,Principal Paid,Interest Paid,Remaining Balance\n";
+            currentYearlyData.forEach(row => {
+                csvContent += `${row.year},${row.principal},${row.interest},${row.balance}\n`;
+            });
+            csvContent += "\n";
+
+            // Detailed Payment Schedule
+            csvContent += "DETAILED PAYMENT SCHEDULE\n";
+            csvContent += "Payment,Interest Portion,Principal Portion,Extra Principal,Total Payment,Remaining Balance\n";
+
+            currentPaymentSchedule.forEach(p => {
+                csvContent += `${p.paymentNum},${p.interest},${p.principal},${p.extra},${p.totalPayment},${p.balance}\n`;
+            });
+
+            // Download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Mortgage_Full_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function setupListeners() {
+            const keys = ['home','down','rate','term','extra','tax','insurance','hoa'];
+            keys.forEach(key => {
+                const slider = document.getElementById(key + '-slider');
+                const input = document.getElementById(key + '-input');
+                if (slider) slider.addEventListener('input', () => {
+                    if (key === 'down') {
+                        const home = parseFloat(document.getElementById('home-input').value);
+                        input.value = Math.round(home * (slider.value / 100));
+                    } else input.value = slider.value;
+                    calculateMortgage();
+                });
+                if (input) input.addEventListener('input', () => {
+                    if (key === 'down') {
+                        const home = parseFloat(document.getElementById('home-input').value);
+                        const pct = Math.min(100, parseFloat(input.value) / home * 100);
+                        document.getElementById('down-slider').value = pct;
+                    }
+                    calculateMortgage();
+                });
+            });
+
+            document.getElementById('home-input').addEventListener('input', () => {
+                const home = parseFloat(document.getElementById('home-input').value);
+                const pct = parseFloat(document.getElementById('down-slider').value);
+                document.getElementById('down-input').value = Math.round(home * pct / 100);
+                calculateMortgage();
+            });
+        }
+
+        window.onload = () => {
+            setupListeners();
+            calculateMortgage();
+        };
+    </script>
+</body>
+</html>
