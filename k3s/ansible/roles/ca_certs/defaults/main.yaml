@@ -5,27 +5,27 @@ ca_cert_identities:
 
 # root cert
 root_cert:
-  name: skd.crt
-  key_path: "{{ ca_base_dir }}/root/skd.key"
-  csr_path: "{{ ca_base_dir }}/root/skd.csr"
-  cert_path: "{{ ca_base_dir }}/root/skd.crt"
-  common_name: root.skd.internal
+  name: example.crt
+  key_path: "{{ ca_base_dir }}/root/example.key"
+  csr_path: "{{ ca_base_dir }}/root/example.csr"
+  cert_path: "{{ ca_base_dir }}/root/example.crt"
+  common_name: root.example.internal
   country_name: US
-  state_name: MT
-  locality_name: Flathead
-  organization_name: snowkiterdude
+  state_name: CO
+  locality_name: Denver
+  organization_name: mycompany
   organizational_unit_name: IT
 
 # intermediate01
 int01_cert:
-  name: skdint01.crt
-  key_path: "{{ ca_base_dir }}/int01/skdint01.key"
-  csr_path: "{{ ca_base_dir }}/int01/skdint01.csr"
-  cert_path: "{{ ca_base_dir }}/int01/skdint01.crt"
-  chain_path: "{{ ca_base_dir }}/int01/skdint01.pem"
-  common_name: skdint01.skd.internal
+  name: exampleint01.crt
+  key_path: "{{ ca_base_dir }}/int01/exampleint01.key"
+  csr_path: "{{ ca_base_dir }}/int01/exampleint01.csr"
+  cert_path: "{{ ca_base_dir }}/int01/exampleint01.crt"
+  chain_path: "{{ ca_base_dir }}/int01/exampleint01.pem"
+  common_name: exampleint01.example.internal
   country_name: US
-  state_name: MT
-  locality_name: Flathead
-  organization_name: snowkiterdude
+  state_name: CO
+  locality_name: Denver
+  organization_name: mycompany
   organizational_unit_name: IT

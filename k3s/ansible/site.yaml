@@ -1,6 +1,7 @@
 ---
 - name: Run all the roles on our control node
-  hosts: control
+  hosts: k3s
   become: yes
   roles:
     - ca_certs
+    - git_server

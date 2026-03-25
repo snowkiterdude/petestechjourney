@@ -4,11 +4,6 @@ all:
       hosts:
         localhost:
           ansible_connection: local
-    control:
+    k3s:
       hosts:
         skdsrv01
-      vars:
-        http_port: 80
-    workers:
-      hosts:
-        skdsrv02

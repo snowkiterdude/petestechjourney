@@ -1,0 +1,123 @@
+---
+- name: Install required packages
+  apt:
+    name:
+      - git
+      - openssh-server
+    state: present
+
+- name: Add git-shell to /etc/shells
+  lineinfile:
+    path: /etc/shells
+    line: /usr/bin/git-shell
+    state: present
+
+- name: Create git user
+  user:
+    name: git
+    shell: /usr/bin/git-shell
+    home: /home/git
+    create_home: yes
+    system: yes
+
+- name: Lock git user password
+  command: passwd -l git
+  changed_when: false
+
+- name: Create .ssh directory for git user
+  file:
+    path: /home/git/.ssh
+    state: directory
+    owner: git
+    group: git
+    mode: '0700'
+
+- name: Create authorized_keys file for git user
+  file:
+    path: /home/git/.ssh/authorized_keys
+    state: touch
+    owner: git
+    group: git
+    mode: '0600'
+
+- name: Create bin directory for git user
+  file:
+    path: /home/git/bin
+    state: directory
+    owner: git
+    group: git
+    mode: '0755'
+
+- name: Create git-only-shell wrapper script
+  copy:
+    dest: /home/git/bin/git-only-shell
+    content: |
+      #!/bin/sh
+      ALLOWED_PATH="$1"
+      if [ -z "$ALLOWED_PATH" ]; then
+        echo "No allowed path specified."
+        exit 1
+      fi
+      CMD="$SSH_ORIGINAL_COMMAND"
+      if [ -z "$CMD" ]; then
+        echo "No command specified."
+        exit 1
+      fi
+      case "$CMD" in
+        git-receive-pack\ * | git-upload-pack\ * | git-upload-archive\ *)
+          REPO_PATH="${CMD#* }"
+          REPO_PATH="${REPO_PATH%% *}"
+          REPO_PATH="${REPO_PATH#\'}"
+          REPO_PATH="${REPO_PATH%\'}"
+          REPO_PATH="${REPO_PATH#\"}"
+          REPO_PATH="${REPO_PATH%\"}"
+          if [ "$REPO_PATH" != "$ALLOWED_PATH" ]; then
+            echo "Access denied to this repository."
+            exit 1
+          fi
+          exec git-shell -c "$CMD"
+          ;;
+        *)
+          echo "Invalid command."
+          exit 1
+          ;;
+      esac
+    owner: git
+    group: git
+    mode: '0755'
+
+- name: Create git repositories directory
+  file:
+    path: /srv/git
+    state: directory
+    owner: git
+    group: git
+    mode: '0775'
+
+- name: Create bare git repositories
+  loop: "{{ repos }}"
+  block:
+    - name: Create repository directory
+      file:
+        path: "/srv/git/{{ item.name }}.git"
+        state: directory
+        mode: '0775'
+
+    - name: Initialize bare repository
+      command: git init --bare .
+      args:
+        chdir: "/srv/git/{{ item.name }}.git"
+
+    - name: Set ownership on repository
+      file:
+        path: "/srv/git/{{ item.name }}.git"
+        recurse: yes
+        owner: git
+        group: git
+
+- name: Add repository-specific authorized keys
+  lineinfile:
+    path: /home/git/.ssh/authorized_keys
+    line: 'command="/home/git/bin/git-only-shell /srv/git/{{ item.0.name }}.git",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {{ item.1 }}'
+    state: present
+  loop: "{{ repos | subelements('authorized_keys') }}"
